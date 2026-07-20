@@ -8,6 +8,9 @@ class NotificationService {
   bool? _notificationsAllowed;
   int _nextNotificationId = 1000;
 
+  // Dedicated ID for the ongoing task notification so we can cancel it
+  static const int _taskProgressNotificationId = 999;
+
   Future<void> init() async {
     if (_initialized) return;
 
@@ -32,6 +35,46 @@ class NotificationService {
     final granted = await android?.requestNotificationsPermission();
     _notificationsAllowed = granted ?? true;
     return _notificationsAllowed!;
+  }
+
+  /// Show a persistent ongoing notification while a task is running
+  Future<void> showTaskProgress(int step, int maxSteps, String description) async {
+    if (!_initialized) await init();
+    if (!await requestPermission()) return;
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'task_progress_channel',
+          'Task Progress',
+          channelDescription: 'Shows current task execution progress',
+          importance: Importance.low,
+          priority: Priority.defaultPriority,
+          playSound: false,
+          enableVibration: false,
+          ongoing: true,
+          onlyAlertOnce: true,
+          showProgress: true,
+          maxProgress: maxSteps,
+          progress: step,
+          category: AndroidNotificationCategory.service,
+          styleInformation: BigTextStyleInformation(description),
+        );
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+
+    await _notificationsPlugin.show(
+      _taskProgressNotificationId,
+      'Apex Agent — Step $step of $maxSteps',
+      description,
+      platformChannelSpecifics,
+    );
+  }
+
+  /// Remove the persistent progress notification
+  Future<void> cancelTaskProgress() async {
+    await _notificationsPlugin.cancel(_taskProgressNotificationId);
   }
 
   Future<void> showTaskCompleteNotification(String title, String body) async {

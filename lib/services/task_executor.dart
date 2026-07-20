@@ -215,6 +215,7 @@ Rules:
       if (_cancelled) {
         results.add('Task cancelled by user.');
         _report('Task cancelled.');
+        await _notificationService.cancelTaskProgress();
         await _notificationService.showTaskCompleteNotification(
           'Task Cancelled',
           'Task was stopped by the user.',
@@ -230,17 +231,16 @@ Rules:
         return 'Task cancelled.';
       }
 
-      // Adaptive delay: give Android apps time to transition screens, load data, or open keyboards
-      int delay = 1200; // Default 1.2s delay for most actions
+      // Adaptive delay: give Android apps time to transition
+      int delay = 500; // Default 0.5s
       if (lastAction == 'open_app') {
-        delay = 3000; // Apps need ~3 seconds to fully cold-start and render
+        delay = 1500; // 1.5s for cold starts
       } else if (lastAction == 'type_text') {
-        delay =
-            2000; // Typing involves keyboards and often triggers heavy network requests (search)
+        delay = 1000; // 1s for keyboard/network
       } else if (lastAction == 'click_text' || lastAction == 'click_at') {
-        delay = 1500; // Clicking usually triggers a screen transition
+        delay = 800; // 0.8s for clicks
       } else if (lastAction == 'scroll') {
-        delay = 1000; // Scrolling is relatively fast
+        delay = 400; // 0.4s for scrolling
       }
       await Future.delayed(Duration(milliseconds: delay));
 
@@ -305,6 +305,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         if (result == null || _cancelled) {
           results.add('Task cancelled by user.');
           _report('Task cancelled.');
+          await _notificationService.cancelTaskProgress();
           await _notificationService.showTaskCompleteNotification(
             'Task Cancelled',
             'Task was stopped by the user.',
@@ -332,6 +333,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         if (_cancelled) {
           results.add('Task cancelled by user.');
           _report('Task cancelled.');
+          await _notificationService.cancelTaskProgress();
           await _notificationService.showTaskCompleteNotification(
             'Task Cancelled',
             'Task was stopped by the user.',
@@ -344,7 +346,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
             results,
           );
           await _screenService.showToast('Task Cancelled');
-          await Future.delayed(const Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 1));
           return 'Task cancelled.';
         }
         results.add('AI error: $e');
@@ -361,7 +363,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           results,
         );
         await _screenService.showToast('AI Error: $e');
-        await Future.delayed(const Duration(seconds: 3));
+        await Future.delayed(const Duration(seconds: 1));
         return 'I could not complete the task because the AI service failed.';
       }
 
@@ -369,6 +371,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       if (_cancelled) {
         results.add('Task cancelled by user.');
         _report('Task cancelled.');
+        await _notificationService.cancelTaskProgress();
         await _notificationService.showTaskCompleteNotification(
           'Task Cancelled',
           'Task was stopped by the user.',
@@ -434,7 +437,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
             results,
           );
           await _screenService.showToast('Agent Error: $e');
-          await Future.delayed(const Duration(seconds: 3));
+          await Future.delayed(const Duration(seconds: 1));
           return 'I could not understand the AI response. Please try again.';
         }
       }
@@ -450,6 +453,11 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       );
 
       _report('Step ${step + 1}: $reasoning');
+      await _notificationService.showTaskProgress(
+        step + 1,
+        _aiService.maxSteps,
+        reasoning.isNotEmpty ? reasoning : 'Working...',
+      );
 
       sameActionCount = action == lastAction ? sameActionCount + 1 : 1;
       final repeatLimit = action == 'press_enter'
@@ -631,6 +639,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       if (isComplete) {
         results.add('Task complete.');
         _report('Task complete.');
+        await _notificationService.cancelTaskProgress();
         await _notificationService.showTaskCompleteNotification(
           'Task Completed',
           'Agent finished its goal.',
@@ -657,6 +666,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       'Reached maximum steps (${_aiService.maxSteps}). Task may be incomplete.',
     );
     _report('Reached maximum steps.');
+    await _notificationService.cancelTaskProgress();
     await _notificationService.showTaskCompleteNotification(
       'Task Stopped',
       'Reached maximum steps (${_aiService.maxSteps}).',
