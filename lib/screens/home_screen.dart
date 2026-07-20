@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _isListening = false;
+  bool _isSpeechEnabled = true;
 
   // Custom switch state: 'chat' or 'agent'
   String _mode = 'chat';
@@ -207,7 +208,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         await _saveSession();
       } else {
         // Plain text response, we already rendered it, just speak it
-        _voiceService.speak(accumulated);
+        if (_isSpeechEnabled) {
+          _voiceService.speak(accumulated);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -318,6 +321,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
       },
     );
+  }
+
+  void _toggleSpeech() {
+    setState(() {
+      _isSpeechEnabled = !_isSpeechEnabled;
+      if (!_isSpeechEnabled) {
+        _voiceService.stopSpeaking();
+      }
+    });
   }
 
   void _startNewChat() {
@@ -1299,6 +1311,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     : Theme.of(context).colorScheme.primary,
               ),
               onPressed: _isLoading ? null : _toggleVoice,
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Mute/Unmute Toggle
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).cardTheme.color,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
+                width: 1.2,
+              ),
+            ),
+            child: IconButton(
+              icon: Icon(
+                _isSpeechEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                size: 18,
+                color: _isSpeechEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+              ),
+              onPressed: _toggleSpeech,
+              tooltip: _isSpeechEnabled ? 'Mute voice' : 'Unmute voice',
             ),
           ),
           const SizedBox(width: 10),
