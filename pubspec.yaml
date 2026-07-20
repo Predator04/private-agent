@@ -4,47 +4,47 @@ publish_to: "none"
 version: 1.0.2+2021
 
 environment:
-  sdk: ^3.10.3
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
   # HTTP & API
-  http: ^1.4.0
+  http: ^1.2.0
 
   # Voice
   speech_to_text: ^7.0.0
-  flutter_tts: ^4.2.0
+  flutter_tts: ^4.0.0
 
   # App management
   installed_apps: ^1.5.0
-  url_launcher: ^6.3.0
-  android_intent_plus: ^5.1.0
+  url_launcher: ^6.2.0
+  android_intent_plus: ^5.0.0
 
   # Contacts
-  flutter_contacts: ^1.1.9+2
+  flutter_contacts: ^1.1.0
 
   # Permissions
-  permission_handler: ^11.4.0
+  permission_handler: ^11.0.0
 
   # Storage
-  shared_preferences: ^2.3.0
+  shared_preferences: ^2.2.0
   path_provider: ^2.1.0
 
   # Notifications
-  flutter_local_notifications: ^18.0.0
+  flutter_local_notifications: ^17.0.0
 
   # System control
   volume_controller: ^2.0.8
-  screen_brightness: ^1.0.1
+  screen_brightness: ^1.0.0
 
   # Shizuku (optional)
-  shizuku_api: ^1.2.2
-  share_plus: ^13.2.0
-  intl: ^0.20.3
+  shizuku_api: ^1.2.1
+  share_plus: ^10.0.0
+  intl: ^0.19.0
   flutter_overlay_window: ^0.5.0
-  flutter_markdown: ^0.7.7+1
+  flutter_markdown: ^0.7.0
 
 dependency_overrides:
   flutter_overlay_window:
@@ -53,7 +53,7 @@ dependency_overrides:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
 
 flutter_launcher_icons:

@@ -1,7 +1,8 @@
 class FeatureFlags {
   FeatureFlags._();
 
-  // Temporarily disabled while the floating-window implementation is being
-  // stabilized. The implementation remains behind this flag for later repair.
-  static const bool floatingOverlayEnabled = false;
+  /// Floating overlay bubble for one-tap voice commands.
+  /// When enabled, a small draggable overlay appears over other apps,
+  /// letting the user tap to speak a command without opening PrivateAgent.
+  static const bool floatingOverlayEnabled = true;
 }

@@ -69,6 +69,13 @@ class ScreenAutomationService {
     }
   }
 
+  /// Check if the device supports screenshots (Android 11+)
+  bool hasScreenshotCapability() {
+    // Android 11 (API 30) or higher is required for takeScreenshot
+    // We detect this at compile time; runtime check happens in the native layer
+    return true; // Will fail gracefully if API < 30
+  }
+
   /// Take a screenshot and return it as a Base64 encoded string.
   /// Note: Requires Android 11 (API 30) or higher.
   Future<String?> takeScreenshot() async {

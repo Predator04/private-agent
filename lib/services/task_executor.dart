@@ -9,6 +9,7 @@ import 'task_history_logger.dart';
 import 'shizuku_service.dart';
 import 'skill_memory_service.dart';
 import 'recovery_engine.dart';
+import 'vision_service.dart';
 import '../models/saved_skill.dart';
 
 /// Executes multi-step UI automation tasks using LLM-guided screen reading.
@@ -23,6 +24,7 @@ class TaskExecutor {
   final NotificationService _notificationService = NotificationService();
   final SkillMemoryService _skillMemory = SkillMemoryService();
   final RecoveryEngine _recoveryEngine = RecoveryEngine();
+  final VisionService _visionService;
 
   /// Callback to report progress messages to the UI
   final void Function(String message)? onProgress;
@@ -40,7 +42,8 @@ class TaskExecutor {
   }) : _aiService = aiService,
        _screenService = screenService,
        _appLauncher = appLauncher,
-       _shizukuService = shizukuService;
+       _shizukuService = shizukuService,
+       _visionService = VisionService(screenService);
 
   /// Cancel the currently running task — takes effect immediately
   void cancel() {
@@ -241,7 +244,7 @@ Rules:
       }
       await Future.delayed(Duration(milliseconds: delay));
 
-      // 1. Read the current screen text
+      // 1. Read the current screen — accessibility tree first
       final screenContent = _aiService.useScreenCompression
           ? await _screenService.getCompressedScreenDescription(userGoal)
           : await _screenService.getScreenDescription();
@@ -249,6 +252,21 @@ Rules:
         '=== SCREEN DUMP (Step ${step + 1}) ===\n$screenContent',
         name: 'PrivateAgent',
       );
+
+      // 1b. If the accessibility tree is sparse, supplement with vision
+      String visionSupplement = '';
+      if (VisionService.isScreenDumpSparse(screenContent)) {
+        final visionResult = await _visionService.analyzeScreen(userGoal);
+        if (visionResult != null && visionResult.description.isNotEmpty) {
+          visionSupplement = '\n\nVISION ANALYSIS (screenshot):\n${visionResult.description}\n';
+          developer.log(
+            '=== VISION SUPPLEMENT (Step ${step + 1}) ===\n${visionResult.description}',
+            name: 'PrivateAgent',
+          );
+        } else if (visionResult?.hadError == true) {
+          // Screenshot captured but vision model failed — still useful
+        }
+      }
 
       // Determine previous result string
       final prevResultStr = step > 0 && results.isNotEmpty
@@ -267,7 +285,7 @@ Rules:
           '''TASK: $userGoal
 
 CURRENT SCREEN TEXT DUMP:
-$screenContent$prevResultStr$failureHint
+$screenContent$visionSupplement$prevResultStr$failureHint
 Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. What is the next action?''';
 
       developer.log('=== AI PROMPT ===\n$prompt', name: 'PrivateAgent');

@@ -34,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   late TextEditingController _apiKeyController;
   late TextEditingController _baseUrlController;
   late TextEditingController _modelController;
+  late TextEditingController _visionModelController;
   late TextEditingController _telegramTokenController;
   bool _obscureKey = true;
   bool _telegramEnabled = false;
@@ -55,6 +56,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     _apiKeyController = TextEditingController(text: widget.aiService.apiKey);
     _baseUrlController = TextEditingController(text: widget.aiService.baseUrl);
     _modelController = TextEditingController(text: widget.aiService.model);
+    _visionModelController = TextEditingController(
+      text: '',
+    );
+    _loadVisionModel();
     _telegramTokenController = TextEditingController(
       text: widget.telegramService.botToken,
     );
@@ -72,12 +77,22 @@ class _SettingsScreenState extends State<SettingsScreen>
     _apiKeyController.addListener(_autoSave);
     _baseUrlController.addListener(_autoSave);
     _modelController.addListener(_autoSave);
+    _visionModelController.addListener(_autoSave);
     _telegramTokenController.addListener(_autoSave);
     _maxTokensController.addListener(_autoSave);
 
     _checkPermissions();
     if (FeatureFlags.floatingOverlayEnabled) {
       _checkOverlayStatus();
+    }
+  }
+
+  Future<void> _loadVisionModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _visionModelController.text = prefs.getString('vision_model') ?? '';
+      });
     }
   }
 
@@ -98,11 +113,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     _apiKeyController.removeListener(_autoSave);
     _baseUrlController.removeListener(_autoSave);
     _modelController.removeListener(_autoSave);
+    _visionModelController.removeListener(_autoSave);
     _telegramTokenController.removeListener(_autoSave);
     _maxTokensController.removeListener(_autoSave);
     _apiKeyController.dispose();
     _baseUrlController.dispose();
     _modelController.dispose();
+    _visionModelController.dispose();
     _telegramTokenController.dispose();
     _maxTokensController.dispose();
     super.dispose();
@@ -151,6 +168,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       baseUrl: _baseUrlController.text.trim(),
       model: _modelController.text.trim(),
     );
+
+    // Save vision model to SharedPreferences
+    final prefs = SharedPreferences.getInstance();
+    prefs.then((p) {
+      p.setString('vision_model', _visionModelController.text.trim());
+    });
 
     widget.telegramService.saveSettings(
       botToken: _telegramTokenController.text.trim(),
@@ -578,6 +601,34 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+
+          // 2b. Vision Model Config (optional supplement)
+          _buildSettingsCard(
+            icon: Icons.image_search_outlined,
+            title: 'Vision Model (Optional)',
+            subtitle: 'Used when Accessibility tree is sparse (WebViews, Canvas apps)',
+            isDark: isDark,
+            children: [
+              TextField(
+                controller: _visionModelController,
+                decoration: _buildInputDecoration(
+                  labelText: 'Vision Model Name',
+                  hintText: 'openai/gpt-4o',
+                  prefixIcon: const Icon(Icons.image_rounded, size: 18),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Leave blank to disable vision fallback.\n'
+                'Vision requires a multimodal model and Android 11+.\n'
+                'Recommended: openai/gpt-4o, gemini-2.0-flash, or llama-3.2-11b-vision',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
               ),
             ],
           ),
