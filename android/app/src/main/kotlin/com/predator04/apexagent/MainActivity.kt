@@ -15,8 +15,8 @@ import android.widget.Button
 import android.net.Uri
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.privateagent/accessibility"
-    private val EVENT_CHANNEL = "com.privateagent/accessibility_events"
+    private val CHANNEL = "com.predator04.apexagent/accessibility"
+    private val EVENT_CHANNEL = "com.predator04.apexagent/accessibility_events"
     private var eventSink: EventChannel.EventSink? = null
     private var overlayView: View? = null
 
@@ -46,9 +46,9 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         fun registerAccessibilityChannel(flutterEngine: FlutterEngine, context: android.content.Context) {
-            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.privateagent/accessibility")
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.predator04.apexagent/accessibility")
                 .setMethodCallHandler { call, result ->
-                    android.util.Log.d("PrivateAgentKotlin", "Received method call: ${call.method}")
+                    android.util.Log.d("ApexAgent", "Received method call: ${call.method}")
                     when (call.method) {
                         "ping" -> result.success(true)
 

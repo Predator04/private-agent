@@ -60,7 +60,7 @@ class _OverlayAppState extends State<OverlayApp> {
       ChatMessage(
         role: 'assistant',
         content:
-            'Hi! I am your Private Agent. Ask me to perform any task on your screen.',
+            'Hi! I am Apex Agent. Ask me to perform any task on your screen.',
       ),
     );
   }
@@ -426,7 +426,7 @@ class _OverlayAppState extends State<OverlayApp> {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Private Agent',
+                        'Apex Agent',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,

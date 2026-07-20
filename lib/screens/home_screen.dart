@@ -491,7 +491,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             children: [
               TextSpan(
-                text: 'Private',
+                text: 'Apex',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   color: Theme.of(context).colorScheme.primary,
@@ -499,11 +499,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
               ),
               const TextSpan(
-                text: 'Agent',
-                style: TextStyle(
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: -0.5,
-                ),
+                text: ' Agent',
               ),
             ],
           ),
