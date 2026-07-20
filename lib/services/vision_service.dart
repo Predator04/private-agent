@@ -127,8 +127,8 @@ Focus on elements the user would need to complete their goal.
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $_apiKey',
-              'HTTP-Referer': 'https://github.com/orailnoor/private-agent',
-              'X-Title': 'PrivateAgent',
+              'HTTP-Referer': 'https://github.com/Predator04/private-agent',
+              'X-Title': 'Apex Agent',
             },
             body: jsonEncode({
               'model': _visionModel,

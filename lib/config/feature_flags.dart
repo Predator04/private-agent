@@ -3,6 +3,6 @@ class FeatureFlags {
 
   /// Floating overlay bubble for one-tap voice commands.
   /// When enabled, a small draggable overlay appears over other apps,
-  /// letting the user tap to speak a command without opening PrivateAgent.
+  /// letting the user tap to speak a command without opening Apex Agent.
   static const bool floatingOverlayEnabled = true;
 }

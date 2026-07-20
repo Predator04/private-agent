@@ -25,7 +25,7 @@ class ScreenAutomationService {
       return await _invoke<bool>('ping') ?? false;
     } catch (e) {
       developer.log('Accessibility channel readiness check failed: $e',
-          name: 'PrivateAgent');
+          name: 'ApexAgent');
       return false;
     }
   }

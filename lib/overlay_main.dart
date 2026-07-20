@@ -123,8 +123,8 @@ class _OverlayAppState extends State<OverlayApp> {
   Future<void> _initializeServices() async {
     // 1. Send registration broadcast first so native MethodChannels are active
     final intent = const AndroidIntent(
-      action: 'com.orailnoor.privateagent.REGISTER_BACKGROUND_CHANNELS',
-      package: 'com.orailnoor.privateagent',
+      action: 'com.predator04.apexagent.REGISTER_BACKGROUND_CHANNELS',
+      package: 'com.predator04.apexagent',
     );
     try {
       await intent.sendBroadcast();
@@ -334,8 +334,8 @@ class _OverlayAppState extends State<OverlayApp> {
     const intent = AndroidIntent(
       action: 'android.intent.action.MAIN',
       category: 'android.intent.category.LAUNCHER',
-      package: 'com.orailnoor.privateagent',
-      componentName: 'com.orailnoor.privateagent.MainActivity',
+      package: 'com.predator04.apexagent',
+      componentName: 'com.predator04.apexagent.MainActivity',
       flags: <int>[
         Flag.FLAG_ACTIVITY_NEW_TASK,
         Flag.FLAG_ACTIVITY_REORDER_TO_FRONT,
@@ -439,7 +439,7 @@ class _OverlayAppState extends State<OverlayApp> {
                     children: [
                       Semantics(
                         button: true,
-                        label: 'Open PrivateAgent',
+                        label: 'Open Apex Agent',
                         child: GestureDetector(
                           onTap: () => unawaited(_openMainApp()),
                           child: const Padding(

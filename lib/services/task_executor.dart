@@ -129,7 +129,7 @@ Rules:
       await ScreenAutomationService.logToNative(
         "[TaskExecutor] Accessibility service not running, returning early.",
       );
-      return 'Accessibility service is not enabled. Go to Settings \u2192 Accessibility \u2192 PrivateAgent Screen Control and enable it.';
+      return 'Accessibility service is not enabled. Go to Settings \u2192 Accessibility \u2192 Apex Agent Screen Control and enable it.';
     }
 
     final results = <String>[];
@@ -200,10 +200,10 @@ Rules:
         }
       }
     } else {
-      // If no shortcut is used, and we are currently inside the PrivateAgent app,
+      // If no shortcut is used, and we are currently inside the Apex Agent app,
       // press Home so the AI doesn't see its own chat bubbles and get confused by the task text.
       final currentPkg = await _screenService.getCurrentPackage();
-      if (currentPkg == 'com.orailnoor.privateagent') {
+      if (currentPkg == 'com.predator04.apexagent') {
         _report('Moving to background...');
         await _screenService.pressHome();
         await Future.delayed(const Duration(milliseconds: 1500));
@@ -250,7 +250,7 @@ Rules:
           : await _screenService.getScreenDescription();
       developer.log(
         '=== SCREEN DUMP (Step ${step + 1}) ===\n$screenContent',
-        name: 'PrivateAgent',
+        name: 'ApexAgent',
       );
 
       // 1b. If the accessibility tree is sparse, supplement with vision
@@ -261,7 +261,7 @@ Rules:
           visionSupplement = '\n\nVISION ANALYSIS (screenshot):\n${visionResult.description}\n';
           developer.log(
             '=== VISION SUPPLEMENT (Step ${step + 1}) ===\n${visionResult.description}',
-            name: 'PrivateAgent',
+            name: 'ApexAgent',
           );
         } else if (visionResult?.hadError == true) {
           // Screenshot captured but vision model failed — still useful
@@ -288,7 +288,7 @@ CURRENT SCREEN TEXT DUMP:
 $screenContent$visionSupplement$prevResultStr$failureHint
 Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. What is the next action?''';
 
-      developer.log('=== AI PROMPT ===\n$prompt', name: 'PrivateAgent');
+      developer.log('=== AI PROMPT ===\n$prompt', name: 'ApexAgent');
 
       // 3. Get AI response — races against cancel signal so Stop works immediately
       String response;
@@ -326,7 +326,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
 
         developer.log(
           '=== RAW AI RESPONSE ===\n$response',
-          name: 'PrivateAgent',
+          name: 'ApexAgent',
         );
       } catch (e) {
         if (_cancelled) {
@@ -397,7 +397,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         // First attempt failed — retry once
         developer.log(
           '=== JSON PARSE FAILED, RETRYING ===\nError: $firstError\nRaw: $response',
-          name: 'PrivateAgent',
+          name: 'ApexAgent',
         );
         _report('Retrying step ${step + 1}...\n(Failed to parse: $firstError)');
         // Wait 2 seconds before retrying to prevent rate-limit spam
@@ -410,7 +410,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           totalTokens += retryResponse.totalTokens;
           developer.log(
             '=== RETRY AI RESPONSE ===\n${retryResponse.content}',
-            name: 'PrivateAgent',
+            name: 'ApexAgent',
           );
 
           String jsonStr = _extractJson(retryResponse.content);
@@ -446,7 +446,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
 
       developer.log(
         '=== PARSED ACTION ===\nAction: $action\nParams: $params\nReasoning: $reasoning\nIs Complete: $isComplete',
-        name: 'PrivateAgent',
+        name: 'ApexAgent',
       );
 
       _report('Step ${step + 1}: $reasoning');
@@ -557,7 +557,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
 
       developer.log(
         '=== NATIVE EXECUTION RESULT ===\n$actionResult',
-        name: 'PrivateAgent',
+        name: 'ApexAgent',
       );
 
       // Track consecutive failures to detect stuck loops
@@ -814,7 +814,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       results.add('Memory Replay Step ${i + 1}: $actionResult');
       developer.log(
         '=== MEMORY REPLAY RESULT ===\n$actionResult',
-        name: 'PrivateAgent',
+        name: 'ApexAgent',
       );
 
       if (!success) {

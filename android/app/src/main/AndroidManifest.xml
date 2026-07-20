@@ -43,7 +43,7 @@
     </queries>
 
     <application
-        android:label="PrivateAgent"
+        android:label="Apex Agent"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -68,7 +68,7 @@
 
         <receiver android:name=".BackgroundEngineReceiver" android:exported="true">
             <intent-filter>
-                <action android:name="com.orailnoor.privateagent.REGISTER_BACKGROUND_CHANNELS" />
+                <action android:name="com.predator04.apexagent.REGISTER_BACKGROUND_CHANNELS" />
             </intent-filter>
         </receiver>
 
@@ -87,7 +87,7 @@
         <service
             android:name=".AgentAccessibilityService"
             android:exported="true"
-            android:label="PrivateAgent Screen Control"
+            android:label="Apex Agent Screen Control"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

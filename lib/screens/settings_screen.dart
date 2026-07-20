@@ -777,7 +777,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       if (await FlutterOverlayWindow.isActive() == false) {
                         await FlutterOverlayWindow.showOverlay(
                           enableDrag: true,
-                          overlayTitle: "PrivateAgent",
+                          overlayTitle: "Apex Agent",
                           overlayContent: "Floating Assistant",
                           flag: OverlayFlag.focusPointer,
                           alignment: OverlayAlignment.centerRight,
@@ -876,7 +876,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           // 9. About / Links Card
           _buildSettingsCard(
             icon: Icons.info_outline_rounded,
-            title: 'About PrivateAgent',
+            title: 'About Apex Agent',
             subtitle: 'Resources and repository access',
             isDark: isDark,
             children: [
@@ -887,14 +887,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                 leading: const Icon(Icons.code_rounded),
                 onTap: () {
                   launchUrl(
-                    Uri.parse('https://github.com/orailnoor/private-agent'),
+                    Uri.parse('https://github.com/Predator04/private-agent'),
                     mode: LaunchMode.externalApplication,
                   );
                 },
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Orailnoor on YouTube'),
+                title: const Text('Predator04 on YouTube'),
                 subtitle: const Text('Subscribe for tutorials and updates'),
                 leading: const Icon(
                   Icons.play_circle_fill_rounded,
@@ -902,7 +902,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 onTap: () {
                   launchUrl(
-                    Uri.parse('https://www.youtube.com/orailnoor'),
+                    Uri.parse('https://www.youtube.com/@Predator04'),
                     mode: LaunchMode.externalApplication,
                   );
                 },
@@ -1121,7 +1121,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: 12),
                 if (!isRunning) ...[
                   const Text(
-                    'Tap below to open Accessibility Settings, then find "PrivateAgent Screen Control" and enable it.',
+                    'Tap below to open Accessibility Settings, then find "Apex Agent Screen Control" and enable it.',
                     style: TextStyle(fontSize: 13),
                   ),
                   const SizedBox(height: 12),

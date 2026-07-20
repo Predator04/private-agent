@@ -18,7 +18,7 @@ class AiService {
 
   /// Free, general-purpose chat endpoints verified in NVIDIA's NIM catalog.
   /// The live /models response is intersected with this list so unavailable or
-  /// non-chat models never appear in PrivateAgent's NVIDIA model picker.
+  /// non-chat models never appear in Apex Agent's NVIDIA model picker.
   static const List<String> nvidiaFreeChatModels = [
     'z-ai/glm-5.2',
     'nvidia/nemotron-3-nano-30b-a3b',
@@ -60,7 +60,7 @@ class AiService {
   final List<Map<String, String>> _conversationHistory = [];
 
   static const String _systemPrompt = '''
-You are PrivateAgent, a helpful AI assistant that controls an Android phone. You can perform device actions and also have normal conversations.
+You are Apex Agent, a helpful AI assistant that controls an Android phone. You can perform device actions and also have normal conversations.
 
 When the user wants to perform a device action, you MUST respond with ONLY a JSON object (no markdown, no code fences, no extra text) in this exact format:
 {"action": "action_name", "params": {"key": "value"}, "response": "What you say to the user"}
@@ -100,7 +100,7 @@ For normal conversation (questions, chat, info requests), just respond with plai
 ''';
 
   static const String _chatSystemPrompt = '''
-You are PrivateAgent, a helpful conversational AI assistant. 
+You are Apex Agent, a helpful conversational AI assistant. 
 Provide direct, natural, and friendly text responses. You cannot perform device actions or run tools. 
 Answer questions, explain concepts, brainstorm, write emails/messages, and chat with the user in plain text or markdown format.
 ''';
@@ -258,8 +258,8 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $_apiKey',
-              'HTTP-Referer': 'https://github.com/orailnoor/private-agent',
-              'X-Title': 'PrivateAgent',
+              'HTTP-Referer': 'https://github.com/Predator04/private-agent',
+              'X-Title': 'Apex Agent',
             },
             body: requestBody,
           )
@@ -357,8 +357,8 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
       request.headers.addAll({
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $_apiKey',
-        'HTTP-Referer': 'https://github.com/orailnoor/private-agent',
-        'X-Title': 'PrivateAgent',
+        'HTTP-Referer': 'https://github.com/Predator04/private-agent',
+        'X-Title': 'Apex Agent',
       });
 
       request.body = jsonEncode({
@@ -500,8 +500,8 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer $_apiKey',
-                'HTTP-Referer': 'https://github.com/orailnoor/private-agent',
-                'X-Title': 'PrivateAgent',
+                'HTTP-Referer': 'https://github.com/Predator04/private-agent',
+                'X-Title': 'Apex Agent',
               },
               body: jsonEncode({
                 'model': _model,
@@ -560,7 +560,7 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
         int delaySeconds = 3 * currentTry;
         developer.log(
           'API call failed ($e), retrying $currentTry/$maxRetries in $delaySeconds seconds...',
-          name: 'PrivateAgent',
+          name: 'ApexAgent',
         );
         await Future.delayed(Duration(seconds: delaySeconds));
       }
