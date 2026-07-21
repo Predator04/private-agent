@@ -45,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _useScreenCompression = true;
   bool _useSystemPrompt = true;
   bool _floatingIconEnabled = false;
+  bool _godMode = false;
   bool _isOverlayPermissionGranted = false;
 
   final Map<String, PermissionStatus> _permissions = {};
@@ -72,6 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
     _useScreenCompression = widget.aiService.useScreenCompression;
     _useSystemPrompt = widget.aiService.useSystemPrompt;
+    _godMode = widget.aiService.godMode;
 
     // Auto-save listeners
     _apiKeyController.addListener(_autoSave);
@@ -745,6 +747,29 @@ class _SettingsScreenState extends State<SettingsScreen>
                   setState(() {
                     _useSystemPrompt = value;
                   });
+                  _autoSave();
+                },
+                contentPadding: EdgeInsets.zero,
+              ),
+              SwitchListTile(
+                title: Row(
+                  children: [
+                    const Text('God Mode'),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.bolt_rounded,
+                      size: 18,
+                      color: _godMode ? Colors.amber : Colors.grey,
+                    ),
+                  ],
+                ),
+                subtitle: const Text('AI will obey every command without refusal or limits'),
+                value: _godMode,
+                activeColor: Colors.amber.shade700,
+                activeTrackColor: Colors.amber.shade200,
+                onChanged: (bool value) async {
+                  setState(() => _godMode = value);
+                  await widget.aiService.saveGodMode(value);
                   _autoSave();
                 },
                 contentPadding: EdgeInsets.zero,
