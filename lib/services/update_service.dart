@@ -270,17 +270,19 @@ class UpdateService {
                   ),
                 if (isPrompt) ...[
                   TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(ctx);
-                      skipVersion(latestTag);
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Version $latestTag skipped. '
-                            'Check Settings to re-enable.',
+                      await skipVersion(latestTag);
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Version $latestTag skipped. '
+                              'Check Settings to re-enable.',
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
                     },
                     child: const Text('Skip This Version'),
                   ),
@@ -297,12 +299,12 @@ class UpdateService {
                           setDialogState(() => dlProgress = p);
                         },
                       );
-                      if (path != null && context.mounted) {
+                      if (path != null && ctx.mounted) {
                         downloadedPath = path;
                         setDialogState(() => phase = 2);
-                      } else if (context.mounted) {
+                      } else if (ctx.mounted) {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(ctx).showSnackBar(
                           const SnackBar(
                             content: Text('Download failed. Try again.'),
                           ),
@@ -315,10 +317,10 @@ class UpdateService {
                 ],
                 if (isReady)
                   FilledButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(ctx);
                       if (downloadedPath != null) {
-                        installApk(downloadedPath!);
+                        await installApk(downloadedPath!);
                       }
                     },
                     icon: const Icon(Icons.install_mobile, size: 18),

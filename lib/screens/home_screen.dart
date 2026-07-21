@@ -39,6 +39,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isListening = false;
   bool _isSpeechEnabled = true;
 
+  // Index of the live status message in _messages (for in-place updates)
+  int? _statusMessageIndex;
+
   // Custom switch state: 'chat' or 'agent'
   String _mode = 'agent';
 
@@ -181,9 +184,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _sendOverlayEvent('OVERLAY_PROGRESS', msg);
             if (mounted) {
               setState(() {
-                _messages.add(
-                  ChatMessage(role: 'assistant', content: '⏳ $msg'),
-                );
+                // Update the status message in place instead of flooding
+                if (_statusMessageIndex != null &&
+                    _statusMessageIndex! < _messages.length) {
+                  _messages[_statusMessageIndex!] = ChatMessage(
+                    role: 'assistant',
+                    content: '⏳ $msg',
+                  );
+                } else {
+                  _messages.add(
+                    ChatMessage(role: 'assistant', content: '⏳ $msg'),
+                  );
+                  _statusMessageIndex = _messages.length - 1;
+                }
               });
               _scrollToBottom();
             }
@@ -352,6 +365,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
       _sessionTitle = '';
       _messages.clear();
+      _statusMessageIndex = null;
       _aiService.clearHistory();
     });
   }

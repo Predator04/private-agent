@@ -312,6 +312,9 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         ]);
 
         if (result == null || _cancelled) {
+          // The AI request is still in-flight; drop it silently so billing
+          // and uncaught errors don't leak.
+          unawaited(aiFuture.catchError((_) {}));
           results.add('Task cancelled by user.');
           _report('Task cancelled.');
           await _notificationService.cancelTaskProgress();
@@ -371,7 +374,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           step,
           results,
         );
-        await _screenService.showToast('Agent Error: $e');
+        await _screenService.showToast('AI service error');
         _cancelCompleter = null;
         await Future.delayed(const Duration(seconds: 1));
         return 'I could not complete the task because the AI service failed.';
@@ -446,7 +449,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
             step,
             results,
           );
-          await _screenService.showToast('Agent Error: $e');
+          await _screenService.showToast('AI formatting error');
           await Future.delayed(const Duration(seconds: 1));
           return 'I could not understand the AI response. Please try again.';
         }
