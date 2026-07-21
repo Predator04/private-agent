@@ -52,7 +52,7 @@ class NotificationService {
           playSound: false,
           enableVibration: false,
           ongoing: true,
-          onlyAlertOnce: false,
+          onlyAlertOnce: true,
           showProgress: true,
           maxProgress: maxSteps,
           progress: step,

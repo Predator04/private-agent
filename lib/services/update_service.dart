@@ -268,7 +268,7 @@ class UpdateService {
                     onPressed: () {
                       Navigator.pop(ctx);
                       skipVersion(latestTag);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(ctx).showSnackBar(
                         SnackBar(
                           content: Text(
                             'Version $latestTag skipped. '

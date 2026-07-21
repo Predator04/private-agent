@@ -136,6 +136,9 @@ Rules:
     results.add('Starting task: $userGoal');
     _report('Starting task: $userGoal');
 
+    // Clear any stale notification from previous run
+    await _notificationService.cancelTaskProgress();
+
     // Show persistent notification immediately so user knows something is happening
     await _notificationService.showTaskProgress(
       0, _aiService.maxSteps,
