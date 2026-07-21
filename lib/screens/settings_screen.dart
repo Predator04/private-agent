@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
@@ -10,6 +13,7 @@ import 'task_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../config/feature_flags.dart';
+import '../config/app_version.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AiService aiService;
@@ -905,6 +909,75 @@ class _SettingsScreenState extends State<SettingsScreen>
             subtitle: 'Resources and repository access',
             isDark: isDark,
             children: [
+              // Version & Update row
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('Version ${AppVersion.versionName}'),
+                subtitle: const Text('Check for updates on GitHub'),
+                leading: const Icon(Icons.info_outline_rounded),
+                trailing: TextButton.icon(
+                  onPressed: () async {
+                    try {
+                      final httpClient = http.Client();
+                      final response = await httpClient.get(
+                        Uri.parse(AppVersion.githubReleasesUrl),
+                        headers: {'Accept': 'application/vnd.github.v3+json'},
+                      );
+                      if (response.statusCode == 200) {
+                        final data = jsonDecode(response.body);
+                        final latestTag = data['tag_name'] as String? ?? '';
+                        final downloadUrl =
+                            '${AppVersion.downloadBaseUrl}/Apex-Agent-$latestTag.apk';
+                        if (latestTag.isNotEmpty &&
+                            latestTag != 'v${AppVersion.version}') {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Update $latestTag available!'),
+                                action: SnackBarAction(
+                                  label: 'Download',
+                                  onPressed: () => launchUrl(
+                                    Uri.parse(downloadUrl),
+                                    mode: LaunchMode.externalApplication,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('You have the latest version.'),
+                              ),
+                            );
+                          }
+                        }
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Could not check for updates.'),
+                            ),
+                          );
+                        }
+                      }
+                      httpClient.close();
+                    } catch (_) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Network error checking for updates.'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  label: const Text('Check'),
+                  icon: const Icon(Icons.system_update_rounded, size: 16),
+                ),
+              ),
+              const Divider(),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Project Repository'),
