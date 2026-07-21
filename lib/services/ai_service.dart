@@ -51,7 +51,7 @@ class AiService {
   String? _apiKey;
   String _baseUrl = _defaultBaseUrl;
   String _model = _defaultModel;
-  int _maxSteps = 15;
+  int _maxSteps = 10;
   bool _disableMaxSteps = false;
   double _temperature = 1.0;
   int _maxTokens = 1024;
@@ -517,7 +517,7 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
       throw Exception('API Key is not configured. Please go to Settings.');
     }
 
-    int maxRetries = 4;
+    int maxRetries = 2;
     int currentTry = 0;
 
     while (true) {
@@ -553,7 +553,7 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
                 'max_tokens': _effectiveMaxTokens,
               }),
             )
-            .timeout(const Duration(minutes: 30));
+            .timeout(const Duration(seconds: 120));
 
         if (response.statusCode != 200) {
           String errorMessage = response.body;
@@ -596,11 +596,14 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
         }
         return AiResponse(content, tokens);
       } catch (e) {
-        if (currentTry > maxRetries) {
+        // Don't retry on 4xx client errors (bad key, rate limit exceeded, etc.)
+        final errorStr = e.toString();
+        final isClientError = errorStr.contains('API error (4');
+        if (isClientError || currentTry > maxRetries) {
           if (e is Exception) rethrow;
           throw Exception('Network error after $maxRetries retries: $e');
         }
-        int delaySeconds = 3 * currentTry;
+        int delaySeconds = 2 * currentTry;
         developer.log(
           'API call failed ($e), retrying $currentTry/$maxRetries in $delaySeconds seconds...',
           name: 'ApexAgent',

@@ -417,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _overlayHistoryTimer?.cancel();
     if (!FeatureFlags.floatingOverlayEnabled) return;
     unawaited(_importOverlayChatHistory());
-    _overlayHistoryTimer = Timer.periodic(const Duration(milliseconds: 500), (
+    _overlayHistoryTimer = Timer.periodic(const Duration(seconds: 3), (
       _,
     ) {
       if (_appLifecycleState == AppLifecycleState.resumed) {

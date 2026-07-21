@@ -120,6 +120,11 @@ Rules:
     _cancelled = false;
 
     await ScreenAutomationService.logToNative(
+      "[TaskExecutor] Initializing vision service...",
+    );
+    await _visionService.init();
+
+    await ScreenAutomationService.logToNative(
       "[TaskExecutor] Checking if accessibility service is running...",
     );
     final isRunning = await _screenService.isServiceRunning();

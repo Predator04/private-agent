@@ -62,6 +62,8 @@ void main() async {
   final themeStr = prefs.getString('themeMode');
   if (themeStr == 'dark') {
     themeNotifier.value = ThemeMode.dark;
+  } else if (themeStr == 'system') {
+    themeNotifier.value = ThemeMode.system;
   } else {
     themeNotifier.value = ThemeMode.light;
   }

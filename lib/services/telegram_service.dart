@@ -14,6 +14,8 @@ class TelegramService {
   int _lastUpdateId = 0;
   bool _isPolling = false;
   Timer? _pollingTimer;
+  bool _isProcessing = false;
+  final _messageQueue = <String, String>{};
 
   TelegramService(this._actionHandler, this._aiService);
 
@@ -97,6 +99,26 @@ class TelegramService {
   }
 
   Future<void> _handleIncomingMessage(String chatId, String text) async {
+    // Queue: only process one message at a time
+    if (_isProcessing) {
+      _messageQueue[chatId] = text;
+      return;
+    }
+    _isProcessing = true;
+    try {
+      await _processMessage(chatId, text);
+    } finally {
+      _isProcessing = false;
+      // Check queue for next message
+      if (_messageQueue.isNotEmpty) {
+        final nextChatId = _messageQueue.keys.first;
+        final nextText = _messageQueue.remove(nextChatId) ?? '';
+        _handleIncomingMessage(nextChatId, nextText);
+      }
+    }
+  }
+
+  Future<void> _processMessage(String chatId, String text) async {
     // Acknowledge receipt
     await _sendMessage(chatId, '🤖 Received: "$text". Working on it...');
 
