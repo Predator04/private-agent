@@ -171,6 +171,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
 
         await _showTaskProgressOverlay('Starting: ${text.trim()}');
+        // Show a persistent notification so user knows something is happening
+        _notificationService.showTaskProgress(0, 10, 'Starting: ${text.trim()}');
 
         // Execute the action (pass aiService for multi-step tasks)
         final result = await _actionHandler.execute(

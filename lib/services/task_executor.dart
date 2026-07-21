@@ -129,12 +129,18 @@ Rules:
       await ScreenAutomationService.logToNative(
         "[TaskExecutor] Accessibility service not running, returning early.",
       );
-      return 'Accessibility service is not enabled. Go to Settings \u2192 Accessibility \u2192 Apex Agent Screen Control and enable it.';
+      return 'Accessibility service is not enabled. Go to Settings → Accessibility → Apex Agent Screen Control and enable it.';
     }
 
     final results = <String>[];
     results.add('Starting task: $userGoal');
     _report('Starting task: $userGoal');
+
+    // Show persistent notification immediately so user knows something is happening
+    await _notificationService.showTaskProgress(
+      0, _aiService.maxSteps,
+      'Starting: $userGoal',
+    );
 
     // Check skill memory first
     final savedSkill = await _skillMemory.findSkill(userGoal);
@@ -185,11 +191,11 @@ Rules:
           final appName = step.params['app_name'] as String? ?? '';
           final res = await _appLauncher.openApp(appName);
           success = res.startsWith('Opened');
-          await Future.delayed(const Duration(milliseconds: 3000));
+          await Future.delayed(const Duration(milliseconds: 1500));
         } else if (step.action == 'click_text') {
           final text = step.params['text'] as String? ?? '';
           success = await _screenService.clickByText(text);
-          await Future.delayed(const Duration(milliseconds: 1500));
+          await Future.delayed(const Duration(milliseconds: 800));
         }
 
         if (success) {
@@ -206,7 +212,7 @@ Rules:
       if (currentPkg == 'com.predator04.apexagent') {
         _report('Moving to background...');
         await _screenService.pressHome();
-        await Future.delayed(const Duration(milliseconds: 1500));
+        await Future.delayed(const Duration(milliseconds: 800));
       }
     }
 
@@ -232,15 +238,15 @@ Rules:
       }
 
       // Adaptive delay: give Android apps time to transition
-      int delay = 500; // Default 0.5s
+      int delay = 300; // Default 0.3s
       if (lastAction == 'open_app') {
-        delay = 1500; // 1.5s for cold starts
+        delay = 800; // 0.8s for cold starts
       } else if (lastAction == 'type_text') {
-        delay = 1000; // 1s for keyboard/network
+        delay = 500; // 0.5s for keyboard/network
       } else if (lastAction == 'click_text' || lastAction == 'click_at') {
-        delay = 800; // 0.8s for clicks
+        delay = 500; // 0.5s for clicks
       } else if (lastAction == 'scroll') {
-        delay = 400; // 0.4s for scrolling
+        delay = 300; // 0.3s for scrolling
       }
       await Future.delayed(Duration(milliseconds: delay));
 
@@ -457,6 +463,9 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         step + 1,
         _aiService.maxSteps,
         reasoning.isNotEmpty ? reasoning : 'Working...',
+      );
+      await _screenService.showToast(
+        '$userGoal — Step ${step + 1}: $reasoning',
       );
 
       sameActionCount = action == lastAction ? sameActionCount + 1 : 1;
