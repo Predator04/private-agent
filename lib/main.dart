@@ -7,6 +7,7 @@ import 'config/feature_flags.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'overlay_main.dart';
+import 'services/update_service.dart';
 
 @pragma("vm:entry-point")
 void overlayMain() {

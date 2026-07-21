@@ -16,6 +16,7 @@ import 'task_history_screen.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../main.dart';
 import '../config/feature_flags.dart';
+import '../services/update_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -66,8 +67,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await _telegramService.init();
     await _actionHandler.shizuku.checkAvailability();
 
+    // Auto-check for updates silently on launch
+    _checkForUpdatesOnLaunch();
+
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  Future<void> _checkForUpdatesOnLaunch() async {
+    final result = await UpdateService.silentCheck();
+    if (mounted && result.newerExists && result.latestTag != null && result.downloadUrl != null) {
+      UpdateService.showUpdateDialog(
+        context,
+        latestTag: result.latestTag!,
+        downloadUrl: result.downloadUrl!,
+      );
     }
   }
 

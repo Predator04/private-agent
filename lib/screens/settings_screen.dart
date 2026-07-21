@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../config/feature_flags.dart';
 import '../config/app_version.dart';
+import '../services/update_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AiService aiService;
@@ -916,66 +917,29 @@ class _SettingsScreenState extends State<SettingsScreen>
                 subtitle: const Text('Check for updates on GitHub'),
                 leading: const Icon(Icons.info_outline_rounded),
                 trailing: TextButton.icon(
-                  onPressed: () async {
-                    try {
-                      final httpClient = http.Client();
-                      final response = await httpClient.get(
-                        Uri.parse(AppVersion.githubReleasesUrl),
-                        headers: {'Accept': 'application/vnd.github.v3+json'},
-                      );
-                      if (response.statusCode == 200) {
-                        final data = jsonDecode(response.body);
-                        final latestTag = data['tag_name'] as String? ?? '';
-                        final downloadUrl =
-                            '${AppVersion.downloadBaseUrl}/Apex-Agent-$latestTag.apk';
-                        if (latestTag.isNotEmpty &&
-                            latestTag != 'v${AppVersion.version}') {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Update $latestTag available!'),
-                                action: SnackBarAction(
-                                  label: 'Download',
-                                  onPressed: () => launchUrl(
-                                    Uri.parse(downloadUrl),
-                                    mode: LaunchMode.externalApplication,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                        } else {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('You have the latest version.'),
-                              ),
-                            );
-                          }
-                        }
-                      } else {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Could not check for updates.'),
-                            ),
-                          );
-                        }
-                      }
-                      httpClient.close();
-                    } catch (_) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Network error checking for updates.'),
-                          ),
-                        );
-                      }
-                    }
-                  },
+                  onPressed: () => UpdateService.checkAndShowDialog(context),
                   label: const Text('Check'),
                   icon: const Icon(Icons.system_update_rounded, size: 16),
                 ),
+              ),
+              const Divider(),
+              // Clear Skipped Update
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Clear Skipped Update'),
+                subtitle: const Text('Re-enable update prompt for skipped version'),
+                leading: const Icon(Icons.restart_alt_rounded),
+                onTap: () async {
+                  await UpdateService.clearSkippedVersion();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Skipped version cleared. '
+                            'You will be prompted on next check.'),
+                      ),
+                    );
+                  }
+                },
               ),
               const Divider(),
               ListTile(
