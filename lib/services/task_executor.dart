@@ -543,7 +543,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
             'Blocked repeated $action action. Use a different action on the visible screen.';
         results.add(blockedResult);
         _report(blockedResult);
-        consecutiveFailures = 3;
+        consecutiveFailures = 1;
         lastFailedAction = action;
         lastAction = action;
         continue;

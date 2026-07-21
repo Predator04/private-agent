@@ -1,8 +1,8 @@
 /// App version info — kept in sync with pubspec.yaml version field.
 class AppVersion {
-  static const String version = '1.8.1';
-  static const int build = 2032;
-  static const String versionName = '1.8.1+2032';
+  static const String version = '1.8.2';
+  static const int build = 2033;
+  static const String versionName = '1.8.2+2033';
   static const String githubReleasesUrl =
       'https://api.github.com/repos/Predator04/private-agent/releases/latest';
   static const String downloadBaseUrl =

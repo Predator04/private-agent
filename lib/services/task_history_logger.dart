@@ -65,6 +65,16 @@ class TaskHistoryLogger {
     try {
       final file = await _localFile;
 
+      // Rotate: keep last 200 entries if file exceeds 5MB
+      if (await file.exists() && await file.length() > 5 * 1024 * 1024) {
+        final lines = await file.readAsLines();
+        if (lines.length > 200) {
+          await file.writeAsString(
+            lines.skip(lines.length - 200).map((l) => '$l\n').join(),
+          );
+        }
+      }
+
       final data = {
         "goal": goal.trim(),
         "status": status,

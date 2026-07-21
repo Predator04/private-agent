@@ -1069,6 +1069,18 @@ class _SettingsScreenState extends State<SettingsScreen>
             shrinkWrap: true,
             children: [
               _changelogSection(
+                'v1.8.1',
+                'Copy button on chat bubbles, God Mode now applies to task execution',
+              ),
+              _changelogSection(
+                'v1.8.0',
+                'Token cost estimator, scheduled tasks UI, screenshot evidence, duration tracking, analytics',
+              ),
+              _changelogSection(
+                'v1.7.0',
+                'Vision init fix, retry 4xx skip, 120s timeout, overlay 3s poll, theme System fix, telegram concurrency guard',
+              ),
+              _changelogSection(
                 'v1.6.0',
                 'Reduced default max steps 15→10, stronger loop prevention, detailed task logging',
               ),
