@@ -104,8 +104,12 @@ class UpdateService {
       if (existing.existsSync()) await existing.delete();
 
       final request = http.Request('GET', Uri.parse(url));
-      final streamed = await http.Client().send(request);
-      if (streamed.statusCode != 200) return null;
+      final client = http.Client();
+      final streamed = await client.send(request);
+      if (streamed.statusCode != 200) {
+        client.close();
+        return null;
+      }
 
       final contentLength = streamed.contentLength ?? 0;
       final file = File(filePath);
@@ -121,6 +125,7 @@ class UpdateService {
       }
       await sink.flush();
       await sink.close();
+      client.close();
       return filePath;
     } catch (_) {
       return null;

@@ -954,36 +954,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                   );
                 },
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Predator04 on YouTube'),
-                subtitle: const Text('Subscribe for tutorials and updates'),
-                leading: const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colors.red,
-                ),
-                onTap: () {
-                  launchUrl(
-                    Uri.parse('https://www.youtube.com/@Predator04'),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Tech Jarves on YouTube'),
-                subtitle: const Text('Subscribe for tutorials and updates'),
-                leading: const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colors.red,
-                ),
-                onTap: () {
-                  launchUrl(
-                    Uri.parse('https://www.youtube.com/techjarves'),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-              ),
             ],
           ),
         ],

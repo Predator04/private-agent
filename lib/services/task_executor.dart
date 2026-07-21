@@ -371,7 +371,8 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           step,
           results,
         );
-        await _screenService.showToast('AI Error: $e');
+        await _screenService.showToast('Agent Error: $e');
+        _cancelCompleter = null;
         await Future.delayed(const Duration(seconds: 1));
         return 'I could not complete the task because the AI service failed.';
       }
@@ -564,11 +565,14 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         case 'done':
           results.add('Task complete: $reasoning');
           _report('Task complete: $reasoning');
+          await _notificationService.cancelTaskProgress();
           await _notificationService.showTaskCompleteNotification(
             'Task Completed',
             reasoning.trim().isEmpty ? 'Agent finished its goal.' : reasoning,
           );
           await _screenService.showToast('Task completed');
+          // Clean up cancel completer
+          _cancelCompleter = null;
           return reasoning.trim().isEmpty ? 'Done.' : reasoning.trim();
 
         default:
@@ -691,6 +695,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       results,
     );
     await _screenService.showToast('Reached maximum steps.');
+    _cancelCompleter = null;
     await Future.delayed(const Duration(seconds: 4));
 
     return 'I could not complete the task within the allowed steps.';
