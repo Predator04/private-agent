@@ -1,7 +1,7 @@
 name: apex_agent
 description: "AI agent for Android"
 publish_to: "none"
-version: 1.1.0+2021
+version: 1.2.0+2025
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
