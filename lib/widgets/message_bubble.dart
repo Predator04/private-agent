@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/chat_message.dart';
 
@@ -122,22 +123,47 @@ class MessageBubble extends StatelessWidget {
                   ),
                 ),
               ),
-            // Timestamp
+            // Timestamp + Copy button
             const SizedBox(height: 4),
-            Text(
-              _formatTime(message.timestamp),
-              style: TextStyle(
-                fontSize: 11,
-                color: isUser
-                    ? Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.6)
-                    : Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.5),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatTime(message.timestamp),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isUser
+                        ? Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.6)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.5),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: message.content));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Copied'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  child: Icon(
+                    Icons.copy_rounded,
+                    size: 14,
+                    color: (isUser
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface)
+                        .withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
