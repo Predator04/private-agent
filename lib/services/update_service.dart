@@ -85,7 +85,7 @@ class UpdateService {
       latestTag: latestTag,
       newerExists: true,
       downloadUrl:
-          '${AppVersion.downloadBaseUrl}/Apex-Agent-$latestTag.apk',
+          '${AppVersion.downloadBaseUrl}/$latestTag/app-release.apk',
     );
   }
 
@@ -366,7 +366,7 @@ class UpdateService {
       }
 
       final downloadUrl =
-          '${AppVersion.downloadBaseUrl}/Apex-Agent-$latestTag.apk';
+          '${AppVersion.downloadBaseUrl}/$latestTag/app-release.apk';
       if (context.mounted) {
         showUpdateDialog(
           context,

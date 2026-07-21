@@ -6,5 +6,5 @@ class AppVersion {
   static const String githubReleasesUrl =
       'https://api.github.com/repos/Predator04/private-agent/releases/latest';
   static const String downloadBaseUrl =
-      'https://github.com/Predator04/private-agent/releases/latest/download';
+      'https://github.com/Predator04/private-agent/releases/download';
 }
