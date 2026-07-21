@@ -499,6 +499,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       lastAction = action; // Track for adaptive delay
 
       // 5. Execute the action
+      final actionStart = DateTime.now();
       bool success = false;
       String actionResult = '';
 
@@ -573,12 +574,22 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           break;
 
         case 'done':
+          final doneScreenshot = await _screenService.takeScreenshot();
           results.add('Task complete: $reasoning');
           _report('Task complete: $reasoning');
           await _notificationService.cancelTaskProgress();
           await _notificationService.showTaskCompleteNotification(
             'Task Completed',
             reasoning.trim().isEmpty ? 'Agent finished its goal.' : reasoning,
+          );
+          await TaskHistoryLogger.logTask(
+            userGoal,
+            'Success',
+            totalTokens,
+            step,
+            results,
+            detailedSteps: detailedSteps,
+            screenshotBase64: doneScreenshot,
           );
           await _screenService.showToast('Task completed');
           // Clean up cancel completer
@@ -668,7 +679,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
         screenDump: screenContent,
         result: actionResult,
         success: success,
-        durationMs: 0,
+        durationMs: DateTime.now().difference(actionStart).inMilliseconds,
         loopHint: consecutiveFailures >= 2 ? 'Repeated failure #$consecutiveFailures' : '',
       ));
 
@@ -678,6 +689,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       }
 
       if (isComplete) {
+        final completeScreenshot = await _screenService.takeScreenshot();
         results.add('Task complete.');
         _report('Task complete.');
         await _notificationService.cancelTaskProgress();
@@ -692,6 +704,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           step,
           results,
           detailedSteps: detailedSteps,
+          screenshotBase64: completeScreenshot,
         );
 
         // Save to skill memory

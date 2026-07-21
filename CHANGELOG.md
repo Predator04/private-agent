@@ -2,6 +2,31 @@
 
 All notable changes to Apex Agent will be documented here.
 
+## [1.8.0] - 2026-07-20
+### Added
+- Token cost estimator in Settings (total tasks, success rate, tokens spent, estimated cost)
+- Scheduled Tasks UI — define recurring goals with schedule presets (every 30m, hourly, daily, custom)
+- Screenshot evidence capture — when a task completes, a screenshot is saved to the task history log
+- Analytics section in Execution logs card in Settings
+
+### Fixed
+- Duration tracking in StepTrace — actual wall-clock time per step now recorded (was always 0ms)
+- `print()` calls replaced with `developer.log()` in task_history_logger for release-build hygiene
+- Bounds null safety — `node['bounds']` is now type-checked before access in screen_automation_service
+
+### Changed
+- All 10 audit bugs resolved, 10 optimizations applied, top feature suggestions added
+
+## [1.7.0] - 2026-07-20
+### Fixed
+- Vision fallback dead code — `_visionService.init()` now called at start of executeTask()
+- Retry logic no longer wastes tokens on 4xx client errors (bad keys, rate limits)
+- 30-minute timeout reduced to 120s for task messages (hung calls no longer block for half an hour)
+- Overlay poll interval reduced from 500ms to 3s (battery savings)
+- Theme "System" mode correctly restored on restart (no longer reverts to Light)
+- Telegram concurrency guard — message queue + `_isProcessing` flag prevents race conditions
+- `_maxSteps` field initializer matched to `init()` default (both now 10)
+
 ## [1.6.0] - 2026-07-20
 ### Changed
 - Reduced default max steps from 15 → 10 to prevent excessive looping

@@ -133,7 +133,7 @@ class ScreenAutomationService {
       final tagStr = tags.isNotEmpty ? '{${tags.join(", ")}}' : '';
       
       String boundsStr = '';
-      if (node['bounds'] != null) {
+      if (node['bounds'] is Map) {
         final b = node['bounds'];
         final centerX = (b['left'] + b['right']) / 2;
         final centerY = (b['top'] + b['bottom']) / 2;

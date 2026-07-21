@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
@@ -54,6 +55,12 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _godMode = false;
   bool _isOverlayPermissionGranted = false;
 
+  // Scheduled Tasks (Feature 2)
+  List<Map<String, dynamic>> _scheduledTasks = [];
+
+  // Analytics cache (Feature 1) — loaded in initState, refreshed on demand
+  Map<String, dynamic>? _taskAnalytics;
+
   final Map<String, PermissionStatus> _permissions = {};
 
   @override
@@ -92,6 +99,58 @@ class _SettingsScreenState extends State<SettingsScreen>
     _checkPermissions();
     if (FeatureFlags.floatingOverlayEnabled) {
       _checkOverlayStatus();
+    }
+    _loadScheduledTasks();
+    _refreshAnalytics();
+  }
+
+  /// Loads scheduled tasks from SharedPreferences (key: scheduled_tasks).
+  Future<void> _loadScheduledTasks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('scheduled_tasks');
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          final tasks = decoded
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList();
+          if (mounted) {
+            setState(() {
+              _scheduledTasks = tasks;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      developer.log('Failed to load scheduled tasks: $e',
+          name: 'ApexAgent');
+    }
+  }
+
+  /// Persists scheduled tasks to SharedPreferences.
+  Future<void> _saveScheduledTasks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('scheduled_tasks', jsonEncode(_scheduledTasks));
+    } catch (e) {
+      developer.log('Failed to save scheduled tasks: $e',
+          name: 'ApexAgent');
+    }
+  }
+
+  /// Refreshes the cached analytics from TaskHistoryLogger.
+  Future<void> _refreshAnalytics() async {
+    try {
+      final analytics = await TaskHistoryLogger.getAnalytics();
+      if (mounted) {
+        setState(() {
+          _taskAnalytics = analytics;
+        });
+      }
+    } catch (e) {
+      developer.log('Failed to load analytics: $e', name: 'ApexAgent');
     }
   }
 
@@ -892,16 +951,29 @@ class _SettingsScreenState extends State<SettingsScreen>
                   'Access complete trace of execution steps',
                 ),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const TaskHistoryScreen(),
                     ),
                   );
+                  // Refresh analytics when returning from history screen
+                  if (mounted) _refreshAnalytics();
                 },
               ),
+              const Divider(),
+              _buildAnalyticsStats(isDark),
             ],
+          ),
+
+          // 8b. Scheduled Tasks Card
+          _buildSettingsCard(
+            icon: Icons.schedule_outlined,
+            title: 'Scheduled Tasks',
+            subtitle: 'Run goals automatically on a recurring schedule',
+            isDark: isDark,
+            children: _buildScheduledTasksChildren(isDark),
           ),
 
           // 9. About / Links Card
@@ -1125,6 +1197,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               final steps = task['steps_taken'] ?? 0;
               final tokens = task['total_tokens'] ?? 0;
               final detailedSteps = task['detailed_steps'] as List<dynamic>? ?? [];
+              final hasTaskScreenshot = task['screenshot'] != null;
 
               final statusIcon = status == 'Success'
                   ? Icons.check_circle
@@ -1141,9 +1214,23 @@ class _SettingsScreenState extends State<SettingsScreen>
                 margin: const EdgeInsets.symmetric(vertical: 4),
                 child: ExpansionTile(
                   leading: Icon(statusIcon, color: statusColor, size: 20),
-                  title: Text(
-                    goal.length > 50 ? '${goal.substring(0, 50)}...' : goal,
-                    style: const TextStyle(fontSize: 13),
+                  title: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          goal.length > 50 ? '${goal.substring(0, 50)}...' : goal,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      if (hasTaskScreenshot) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.image,
+                          size: 16,
+                          color: Colors.blueGrey,
+                        ),
+                      ],
+                    ],
                   ),
                   subtitle: Text(
                     '$status · $steps steps · ${tokens}tokens',
@@ -1163,6 +1250,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         final reasoning = s['reasoning'] ?? '';
                         final result = s['result'] ?? '';
                         final success = s['success'] == true;
+                        final hasScreenshot = s['screenshot'] != null;
                         return ListTile(
                           dense: true,
                           leading: Icon(
@@ -1183,6 +1271,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          trailing: hasScreenshot
+                              ? const Icon(
+                                  Icons.image,
+                                  size: 18,
+                                  color: Colors.blueGrey,
+                                )
+                              : null,
                         );
                       }),
                     const SizedBox(height: 8),
@@ -1199,6 +1294,558 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// Returns a per-1K-token cost in USD based on the current base URL.
+  /// DeepSeek → $0.001/1K; NVIDIA → $0.002/1K; default → DeepSeek pricing.
+  double _costPer1kTokens() {
+    final baseUrl = _baseUrlController.text.trim();
+    if (AiService.isNvidiaBaseUrl(baseUrl)) {
+      return 0.002;
+    }
+    return 0.001;
+  }
+
+  String _providerLabel() {
+    final baseUrl = _baseUrlController.text.trim();
+    return AiService.isNvidiaBaseUrl(baseUrl) ? 'NVIDIA' : 'DeepSeek';
+  }
+
+  /// Builds the analytics stats section shown inside the Execution logs card.
+  Widget _buildAnalyticsStats(bool isDark) {
+    final analytics = _taskAnalytics;
+    final totalTasks = (analytics?['totalTasks'] ?? 0) as int;
+    final successRate = (analytics?['successRate'] ?? 0.0) as double;
+    final successCount = (analytics?['successCount'] ?? 0) as int;
+    final failedCount = (analytics?['failedCount'] ?? 0) as int;
+    final totalTokens = (analytics?['totalTokens'] ?? 0) as int;
+    final costPer1k = _costPer1kTokens();
+    final estimatedCost = (totalTokens / 1000.0) * costPer1k;
+
+    String formatTokens(int tokens) {
+      if (tokens >= 1000000) {
+        return '${(tokens / 1000000).toStringAsFixed(2)}M';
+      } else if (tokens >= 1000) {
+        return '${(tokens / 1000).toStringAsFixed(1)}K';
+      }
+      return tokens.toString();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.analytics_outlined, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              'Usage Analytics',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+              ),
+            ),
+            const Spacer(),
+            if (analytics == null)
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              InkWell(
+                onTap: _refreshAnalytics,
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.refresh, size: 16),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _statTile(
+                label: 'Total Tasks',
+                value: '$totalTasks',
+                icon: Icons.task_alt,
+                color: Theme.of(context).primaryColor,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _statTile(
+                label: 'Success Rate',
+                value: totalTasks == 0
+                    ? '—'
+                    : '${(successRate * 100).toStringAsFixed(0)}%',
+                icon: Icons.check_circle_outline,
+                color: Colors.green,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _statTile(
+                label: 'Tokens Spent',
+                value: formatTokens(totalTokens),
+                icon: Icons.memory,
+                color: Colors.deepPurple,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _statTile(
+                label: 'Est. Cost (${_providerLabel()})',
+                value: '\$${estimatedCost.toStringAsFixed(3)}',
+                icon: Icons.attach_money_rounded,
+                color: Colors.amber.shade800,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (totalTasks > 0)
+          Text(
+            '$successCount succeeded · $failedCount failed · '
+            '@ \$${costPer1k.toStringAsFixed(4)}/1K tokens',
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+            ),
+          ),
+        if (totalTasks == 0 && analytics != null)
+          Text(
+            'Run a task to start collecting analytics.',
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Small boxed stat tile used in the analytics section.
+  Widget _statTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withOpacity(0.25),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the children for the Scheduled Tasks card.
+  List<Widget> _buildScheduledTasksChildren(bool isDark) {
+    final children = <Widget>[];
+
+    if (_scheduledTasks.isEmpty) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.inbox_outlined,
+                size: 18,
+                color: isDark
+                    ? const Color(0xFF64748B)
+                    : const Color(0xFF94A3B8),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'No scheduled tasks yet. Add one below to run a goal '
+                  'automatically on a recurring schedule.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      for (var i = 0; i < _scheduledTasks.length; i++) {
+        final task = _scheduledTasks[i];
+        children.add(_buildScheduledTaskTile(task, i, isDark));
+        if (i < _scheduledTasks.length - 1) {
+          children.add(const Divider(height: 1));
+        }
+      }
+    }
+
+    children.add(const SizedBox(height: 12));
+    children.add(
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () => _showAddScheduledTaskDialog(isDark),
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Add Task'),
+        ),
+      ),
+    );
+    children.add(
+      const SizedBox(height: 4),
+    );
+    children.add(
+      Text(
+        'Note: This stores schedules locally. Execution will be wired up to '
+        'Android WorkManager in a future build.',
+        style: TextStyle(
+          fontSize: 10,
+          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+        ),
+      ),
+    );
+
+    return children;
+  }
+
+  /// A single scheduled task tile with toggle + remove.
+  Widget _buildScheduledTaskTile(
+    Map<String, dynamic> task,
+    int index,
+    bool isDark,
+  ) {
+    final goal = task['goal']?.toString() ?? '(no goal)';
+    final schedule = task['schedule']?.toString() ?? '';
+    final enabled = task['enabled'] == true;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 2),
+      leading: Icon(
+        enabled ? Icons.radio_button_checked : Icons.radio_button_off,
+        size: 20,
+        color: enabled ? Theme.of(context).primaryColor : Colors.grey,
+      ),
+      title: Text(
+        goal,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Row(
+          children: [
+            Icon(
+              Icons.timer_outlined,
+              size: 12,
+              color: isDark
+                  ? const Color(0xFF94A3B8)
+                  : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                schedule,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch(
+            value: enabled,
+            onChanged: (val) {
+              setState(() {
+                _scheduledTasks[index]['enabled'] = val;
+              });
+              _saveScheduledTasks();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 20),
+            color: Colors.red.shade400,
+            tooltip: 'Remove',
+            onPressed: () => _removeScheduledTask(index),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Deletes a scheduled task after confirmation.
+  void _removeScheduledTask(int index) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Task?'),
+        content: const Text(
+          'This scheduled task will be permanently removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              setState(() {
+                _scheduledTasks.removeAt(index);
+              });
+              _saveScheduledTasks();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Schedule-type options for the Add Task dialog.
+  static const List<String> _schedulePresets = [
+    'Every 30 min',
+    'Every hour',
+    'Daily at 9AM',
+    'Custom cron',
+  ];
+
+  /// Maps a preset label to its cron expression.
+  String _presetToCron(String preset) {
+    switch (preset) {
+      case 'Every 30 min':
+        return '*/30 * * * *';
+      case 'Every hour':
+        return '0 * * * *';
+      case 'Daily at 9AM':
+        return '0 9 * * *';
+      case 'Custom cron':
+        return '';
+      default:
+        return '';
+    }
+  }
+
+  /// Shows the Add Scheduled Task dialog.
+  void _showAddScheduledTaskDialog(bool isDark) {
+    final goalController = TextEditingController();
+    String selectedPreset = _schedulePresets.first;
+    final cronController = TextEditingController(text: _presetToCron(selectedPreset));
+    bool enabled = true;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final showCronField = selectedPreset == 'Custom cron';
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.add_task_rounded, size: 24),
+                  SizedBox(width: 8),
+                  Text('Add Scheduled Task'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: goalController,
+                      maxLines: 2,
+                      autofocus: true,
+                      decoration: _buildInputDecoration(
+                        labelText: 'Goal',
+                        hintText: 'e.g. Check weather and send summary',
+                        prefixIcon:
+                            const Icon(Icons.flag_outlined, size: 18),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedPreset,
+                      decoration: _buildInputDecoration(
+                        labelText: 'Schedule',
+                        hintText: 'Pick a frequency',
+                        prefixIcon:
+                            const Icon(Icons.timer_outlined, size: 18),
+                      ),
+                      items: _schedulePresets
+                          .map((p) => DropdownMenuItem(
+                                value: p,
+                                child: Text(p, style: const TextStyle(fontSize: 13)),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setDialogState(() {
+                          selectedPreset = val;
+                          if (val != 'Custom cron') {
+                            cronController.text = _presetToCron(val);
+                          } else {
+                            cronController.clear();
+                          }
+                        });
+                      },
+                    ),
+                    if (showCronField) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: cronController,
+                        decoration: _buildInputDecoration(
+                          labelText: 'Cron Expression',
+                          hintText: '*/30 * * * *',
+                          prefixIcon: const Icon(Icons.code_rounded, size: 18),
+                        ),
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Format: min hour day-of-month month day-of-week',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isDark
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text('Enabled'),
+                      subtitle: const Text(
+                        'When off, the task is stored but not executed',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                      value: enabled,
+                      onChanged: (val) =>
+                          setDialogState(() => enabled = val),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final goal = goalController.text.trim();
+                    var schedule = cronController.text.trim();
+                    if (selectedPreset != 'Custom cron') {
+                      schedule = _presetToCron(selectedPreset);
+                    }
+                    if (goal.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a goal.'),
+                        ),
+                      );
+                      return;
+                    }
+                    if (schedule.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Please provide a valid schedule / cron expression.'),
+                        ),
+                      );
+                      return;
+                    }
+                    final newTask = <String, dynamic>{
+                      'id':
+                          'task_${DateTime.now().millisecondsSinceEpoch}',
+                      'goal': goal,
+                      'schedule': schedule,
+                      'enabled': enabled,
+                    };
+                    setState(() {
+                      _scheduledTasks.add(newTask);
+                    });
+                    _saveScheduledTasks();
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Scheduled task added.'),
+                      ),
+                    );
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

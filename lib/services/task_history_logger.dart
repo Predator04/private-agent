@@ -60,6 +60,7 @@ class TaskHistoryLogger {
     int steps,
     List<String> trace, {
     List<StepTrace>? detailedSteps,
+    String? screenshotBase64,
   }) async {
     try {
       final file = await _localFile;
@@ -73,6 +74,7 @@ class TaskHistoryLogger {
         "detailed_steps":
             detailedSteps?.map((s) => s.toJson()).toList() ?? [],
         "timestamp": DateTime.now().toIso8601String(),
+        if (screenshotBase64 != null) "screenshot": screenshotBase64,
       };
 
       await file.writeAsString('${jsonEncode(data)}\n', mode: FileMode.append);
@@ -108,7 +110,7 @@ class TaskHistoryLogger {
         await file.delete();
       }
     } catch (e) {
-      print('Failed to clear task history: $e');
+      developer.log('Failed to clear task history: $e', name: 'ApexAgent');
     }
   }
 
@@ -121,17 +123,24 @@ class TaskHistoryLogger {
         'successRate': 0.0,
         'successCount': 0,
         'failedCount': 0,
+        'totalTokens': 0,
       };
     }
 
     int successCount = 0;
     int failedCount = 0;
+    int totalTokens = 0;
 
     for (final task in history) {
       if (task['status'] == 'Success') {
         successCount++;
       } else if (task['status'] == 'Failed' || task['status'] == 'Cancelled') {
         failedCount++;
+      }
+      // Sum total_tokens across all tasks (for cost estimation)
+      final tokens = task['total_tokens'];
+      if (tokens is num) {
+        totalTokens += tokens.toInt();
       }
     }
 
@@ -140,6 +149,7 @@ class TaskHistoryLogger {
       'successRate': successCount / history.length,
       'successCount': successCount,
       'failedCount': failedCount,
+      'totalTokens': totalTokens,
     };
   }
 }
