@@ -84,11 +84,12 @@ Rules:
 - When typing in a search box, you MUST click it first, wait a step, and THEN type.
 - After typing a search query, use `press_enter` once. If the screen does not change, click the exact visible suggestion text. Do not repeat the same submit action more than twice.
 - CRITICAL: After you press_enter on a search query, wait for results. Do NOT click voice search, microphone, or "search by voice" elements. ONLY interact with actual search result text.
-- Never scroll or swipe more than three times in a row. After three scrolls, choose the best visible result or take a different action instead of continuing to browse indefinitely.
+- Never scroll or swipe more than THREE times in a row. After three scrolls, choose the best visible result or set is_complete=true.
+- **COMPLETE THE TASK IN AS FEW STEPS AS POSSIBLE.** If the screen shows what you need, click it immediately and set is_complete=true. Do NOT scroll unnecessarily.
 - Set is_complete=true ONLY when the task is fully done.
 - If you need to find something by scrolling, scroll and then check the screen again.
 - If you need to open an app (like Wikipedia, Spotify, etc.) and you cannot find it after a couple of scrolls, ASSUME it is not installed. Immediately open Chrome or Google to search for the info on the web instead.
-- If stuck after 3 attempts, set is_complete=true and explain in reasoning.
+- **If stuck after 2 attempts** (same action twice with same result), set is_complete=true and explain in reasoning.
 - Keep reasoning very brief (1 sentence)
 ''';
 

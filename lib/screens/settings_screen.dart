@@ -43,7 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   late TextEditingController _telegramTokenController;
   bool _obscureKey = true;
   bool _telegramEnabled = false;
-  double _maxSteps = 15;
+  double _maxSteps = 10;
   bool _disableMaxSteps = false;
   late TextEditingController _maxTokensController;
   double _temperature = 1.0;
