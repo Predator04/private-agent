@@ -133,7 +133,7 @@ class UpdateService {
   }
 
   /// Open the Android package installer for the downloaded APK.
-  /// Uses a content:// URI via FileProvider (Android 7+).
+  /// Uses a content:// URI via FileProvider with ACTION_VIEW + MIME type.
   static Future<bool> installApk(String filePath) async {
     try {
       final file = File(filePath);
@@ -144,8 +144,9 @@ class UpdateService {
           'content://com.predator04.apexagent.fileprovider/root/$cleanPath';
 
       final intent = AndroidIntent(
-        action: 'android.intent.action.INSTALL_PACKAGE',
+        action: 'android.intent.action.VIEW',
         data: contentUri,
+        type: 'application/vnd.android.package-archive',
         flags: [
           Flag.FLAG_ACTIVITY_NEW_TASK,
           Flag.FLAG_GRANT_READ_URI_PERMISSION,

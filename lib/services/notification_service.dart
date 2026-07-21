@@ -20,7 +20,12 @@ class NotificationService {
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
 
-    await _notificationsPlugin.initialize(initializationSettings);
+    try {
+      await _notificationsPlugin.initialize(initializationSettings);
+    } catch (_) {
+      // Plugin may crash on stale scheduled notification cache.
+      // Silently ignore — initialize will work after app restart.
+    }
     _initialized = true;
   }
 
