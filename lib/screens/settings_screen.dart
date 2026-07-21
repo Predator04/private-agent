@@ -15,6 +15,7 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../config/feature_flags.dart';
 import '../config/app_version.dart';
 import '../services/update_service.dart';
+import '../services/task_history_logger.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AiService aiService;
@@ -942,6 +943,24 @@ class _SettingsScreenState extends State<SettingsScreen>
                 },
               ),
               const Divider(),
+              // What's New / Changelog
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text("What's New"),
+                subtitle: const Text('View changelog for this version'),
+                leading: const Icon(Icons.sticky_note_2_rounded),
+                onTap: () => _showChangelogDialog(context),
+              ),
+              const Divider(),
+              // Task History
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Task History'),
+                subtitle: const Text('View detailed execution logs'),
+                leading: const Icon(Icons.history_rounded),
+                onTap: () => _showTaskHistory(context),
+              ),
+              const Divider(),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Project Repository'),
@@ -955,6 +974,228 @@ class _SettingsScreenState extends State<SettingsScreen>
                 },
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangelogDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.sticky_note_2_rounded, size: 24),
+            SizedBox(width: 8),
+            Text("What's New"),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              _changelogSection(
+                'v1.6.0',
+                'Reduced default max steps 15→10, stronger loop prevention, detailed task logging',
+              ),
+              _changelogSection(
+                'v1.5.0',
+                'Fixed Missing type parameter crash, switched to ACTION_VIEW for install',
+              ),
+              _changelogSection(
+                'v1.4.0',
+                'Silent notifications, AI avoids voice search, speed improvements, YouTube links removed',
+              ),
+              _changelogSection(
+                'v1.3.0',
+                'Memory leak fixes, Disable Max Steps toggle, notification/crash fixes',
+              ),
+              _changelogSection(
+                'v1.2.0',
+                'Speed boost (delays cut 55-65%), persistent task notification, toast every step',
+              ),
+              _changelogSection(
+                'v1.1.0',
+                'In-app version display, auto-update check, Download & Install from within app',
+              ),
+              _changelogSection(
+                'v1.0.2',
+                'Initial release: God Mode, Agent default, mute button, rebrand to Apex Agent',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _changelogSection(String version, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              version,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.amber,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              description,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showTaskHistory(BuildContext context) async {
+    final history = await TaskHistoryLogger.readHistory();
+    if (!context.mounted) return;
+
+    if (history.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No task history yet.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.history_rounded, size: 24),
+            SizedBox(width: 8),
+            Text('Task History'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: ListView.builder(
+            itemCount: history.length + 1, // +1 for clear button
+            itemBuilder: (ctx, i) {
+              if (i == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      await TaskHistoryLogger.clearHistory();
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('History cleared.')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.delete_sweep, size: 18),
+                    label: const Text('Clear All History'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  ),
+                );
+              }
+
+              final task = history[i - 1];
+              final goal = task['goal'] as String? ?? 'Unknown';
+              final status = task['status'] as String? ?? '?';
+              final steps = task['steps_taken'] ?? 0;
+              final tokens = task['total_tokens'] ?? 0;
+              final detailedSteps = task['detailed_steps'] as List<dynamic>? ?? [];
+
+              final statusIcon = status == 'Success'
+                  ? Icons.check_circle
+                  : status == 'Cancelled'
+                      ? Icons.cancel
+                      : Icons.error;
+              final statusColor = status == 'Success'
+                  ? Colors.green
+                  : status == 'Cancelled'
+                      ? Colors.orange
+                      : Colors.red;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ExpansionTile(
+                  leading: Icon(statusIcon, color: statusColor, size: 20),
+                  title: Text(
+                    goal.length > 50 ? '${goal.substring(0, 50)}...' : goal,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    '$status · $steps steps · ${tokens}tokens',
+                    style: TextStyle(fontSize: 11, color: statusColor),
+                  ),
+                  children: [
+                    if (detailedSteps.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Text('No detailed step data available.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      )
+                    else
+                      ...detailedSteps.map((step) {
+                        final s = step as Map<String, dynamic>;
+                        final action = s['action'] ?? '?';
+                        final reasoning = s['reasoning'] ?? '';
+                        final result = s['result'] ?? '';
+                        final success = s['success'] == true;
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(
+                            success ? Icons.check_circle_outline : Icons.error_outline,
+                            color: success ? Colors.green : Colors.red,
+                            size: 16,
+                          ),
+                          title: Text(
+                            'Step ${s['step']}: $action',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          subtitle: Text(
+                            reasoning.toString().isNotEmpty ? reasoning.toString() : result.toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: success ? null : Colors.red.shade300,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
           ),
         ],
       ),

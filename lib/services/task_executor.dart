@@ -136,6 +136,7 @@ Rules:
     final results = <String>[];
     results.add('Starting task: $userGoal');
     _report('Starting task: $userGoal');
+    final detailedSteps = <StepTrace>[];
 
     // Clear any stale notification from previous run
     await _notificationService.cancelTaskProgress();
@@ -651,6 +652,21 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
 
       results.add('Step ${step + 1}: $actionResult ($reasoning)');
 
+      // Capture detailed step for debugging
+      detailedSteps.add(StepTrace(
+        step: step + 1,
+        action: action,
+        params: params,
+        reasoning: reasoning,
+        isComplete: isComplete,
+        aiResponse: response,
+        screenDump: screenContent,
+        result: actionResult,
+        success: success,
+        durationMs: 0,
+        loopHint: consecutiveFailures >= 2 ? 'Repeated failure #$consecutiveFailures' : '',
+      ));
+
       // Provide progress feedback
       if (!isComplete && (step + 1) % 3 == 0) {
         await _screenService.showToast('Working... (Step ${step + 1})');
@@ -670,6 +686,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
           totalTokens,
           step,
           results,
+          detailedSteps: detailedSteps,
         );
 
         // Save to skill memory
@@ -697,6 +714,7 @@ Step ${step + 1}/${_aiService.maxSteps}. Look at the text dump and coordinates. 
       totalTokens,
       _aiService.maxSteps,
       results,
+      detailedSteps: detailedSteps,
     );
     await _screenService.showToast('Reached maximum steps.');
     _cancelCompleter = null;

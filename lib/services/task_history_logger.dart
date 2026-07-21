@@ -1,6 +1,50 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:path_provider/path_provider.dart';
+
+/// Detailed step-level trace for debugging AI behavior.
+class StepTrace {
+  final int step;
+  final String action;
+  final Map<String, dynamic> params;
+  final String reasoning;
+  final bool isComplete;
+  final String aiResponse;
+  final String screenDump;
+  final String result;
+  final bool success;
+  final int durationMs;
+  final String loopHint;
+
+  StepTrace({
+    required this.step,
+    required this.action,
+    required this.params,
+    required this.reasoning,
+    required this.isComplete,
+    required this.aiResponse,
+    required this.screenDump,
+    required this.result,
+    required this.success,
+    required this.durationMs,
+    this.loopHint = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+        'step': step,
+        'action': action,
+        'params': params,
+        'reasoning': reasoning,
+        'is_complete': isComplete,
+        'ai_response': aiResponse,
+        'screen_dump': screenDump,
+        'result': result,
+        'success': success,
+        'duration_ms': durationMs,
+        'loop_hint': loopHint,
+      };
+}
 
 class TaskHistoryLogger {
   static Future<File> get _localFile async {
@@ -9,22 +53,31 @@ class TaskHistoryLogger {
   }
 
   /// Appends a task execution record to the history file
-  static Future<void> logTask(String goal, String status, int totalTokens, int steps, List<String> trace) async {
+  static Future<void> logTask(
+    String goal,
+    String status,
+    int totalTokens,
+    int steps,
+    List<String> trace, {
+    List<StepTrace>? detailedSteps,
+  }) async {
     try {
       final file = await _localFile;
-      
+
       final data = {
         "goal": goal.trim(),
-        "status": status, // "Success", "Failed", "Cancelled"
+        "status": status,
         "total_tokens": totalTokens,
         "steps_taken": steps,
         "trace": trace,
+        "detailed_steps":
+            detailedSteps?.map((s) => s.toJson()).toList() ?? [],
         "timestamp": DateTime.now().toIso8601String(),
       };
-      
+
       await file.writeAsString('${jsonEncode(data)}\n', mode: FileMode.append);
     } catch (e) {
-      print('Failed to write task history: $e');
+      developer.log('Failed to write task history: $e', name: 'ApexAgent');
     }
   }
 
@@ -42,7 +95,7 @@ class TaskHistoryLogger {
           .reversed
           .toList(); // newest first
     } catch (e) {
-      print('Failed to read task history: $e');
+      developer.log('Failed to read task history: $e', name: 'ApexAgent');
       return [];
     }
   }
