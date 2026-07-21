@@ -74,7 +74,12 @@ class NotificationService {
 
   /// Remove the persistent progress notification
   Future<void> cancelTaskProgress() async {
-    await _notificationsPlugin.cancel(_taskProgressNotificationId);
+    try {
+      await _notificationsPlugin.cancel(_taskProgressNotificationId);
+    } catch (_) {
+      // Silently ignore — this can throw Missing type parameter on some
+      // Android versions when cached scheduled notifications have stale data.
+    }
   }
 
   Future<void> showTaskCompleteNotification(String title, String body) async {
